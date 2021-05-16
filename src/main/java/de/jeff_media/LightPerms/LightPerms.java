@@ -1,7 +1,6 @@
 package de.jeff_media.LightPerms;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,7 +16,6 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -26,6 +24,7 @@ public class LightPerms extends JavaPlugin implements Listener, CommandExecutor 
     HashMap<UUID, PermissionAttachment> perms;
     PluginUpdateChecker updateChecker;
 
+    @Override
     public void onEnable() {
         saveDefaultConfig();
         updateChecker = new PluginUpdateChecker(this, "https://api.jeff-media.de/lightperms/latest-version.txt", "https://www.spigotmc.org/resources/1-8-1-16-lightperms.62447/", null, "https://chestsort.de/donate");
@@ -70,19 +69,19 @@ public class LightPerms extends JavaPlugin implements Listener, CommandExecutor 
         PermissionAttachment attachment = p.addAttachment(this);
 
         for (String permission : getConfig().getStringList("default.permissions")) {
-            attachment.setPermission(permission, true);
+            addPermission(attachment, permission);
             //System.out.println("Adding " + permission + " to " + p.getName() + " because default");
         }
 
         for (String group : getConfig().getStringList("users." + p.getName() + ".groups")) {
             System.out.println("User " + p.getName() + " is in group " + group);
             for (String perm : getConfig().getStringList("groups." + group + ".permissions")) {
-                attachment.setPermission(perm, true);
+                addPermission(attachment, perm);
                 //System.out.println(" Adding " + perm + " to " + p.getName() + " because group " + group);
             }
         }
         for (String perm : getConfig().getStringList("users." + p.getName() + ".permissions")) {
-            attachment.setPermission(perm, true);
+            addPermission(attachment, perm);
             //System.out.println("Adding " + perm + " to " + p.getName() + " because player");
         }
 
@@ -91,6 +90,14 @@ public class LightPerms extends JavaPlugin implements Listener, CommandExecutor 
         if (getMcVersion()>=13) {
             p.updateCommands();
         }
+    }
+
+    private void addPermission(PermissionAttachment attachment, String permission) {
+        boolean positive = !permission.startsWith("-");
+        if (!positive) {
+            permission = permission.substring(1);
+        }
+        attachment.setPermission(permission, positive);
     }
 
     @EventHandler
@@ -103,6 +110,7 @@ public class LightPerms extends JavaPlugin implements Listener, CommandExecutor 
         event.getPlayer().removeAttachment(perms.get(event.getPlayer().getUniqueId()));
     }
 
+    @Override
     public void onDisable() {
         updateChecker.stop();
         removePermissions();
